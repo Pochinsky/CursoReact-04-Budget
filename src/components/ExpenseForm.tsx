@@ -8,6 +8,7 @@ import Error from "./Error";
 import { useBudget } from "../hooks/useBudget";
 
 export default function ExpenseForm() {
+  // States
   const [expense, setExpense] = useState<DraftExpense>({
     amount: 0,
     expenseName: "",
@@ -15,9 +16,10 @@ export default function ExpenseForm() {
     date: new Date(),
   });
   const [error, setError] = useState("");
+  const [previousAmount, setPreviousAmount] = useState(0);
+  const { dispatch, state, remainingBudget } = useBudget();
 
-  const { dispatch, state } = useBudget();
-
+  // Handlers
   const handleChange = (
     e: ChangeEvent<HTMLInputElement> | ChangeEvent<HTMLSelectElement>
   ) => {
@@ -28,14 +30,12 @@ export default function ExpenseForm() {
       [name]: isAmountField ? +value : value,
     });
   };
-
   const handleChangeDate = (value: Value) => {
     setExpense({ ...expense, date: value });
   };
-
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Validation
+    // Validate no empty fields
     if (Object.values(expense).includes("")) {
       setError("Todos los campos son obligatorios");
       setTimeout(() => {
@@ -43,28 +43,40 @@ export default function ExpenseForm() {
       }, 3000);
       return;
     }
-    // update
+    // Validate no overdraw
+    if (expense.amount - previousAmount > remainingBudget) {
+      setError("El gasto excede el presupuesto");
+      setTimeout(() => {
+        setError("");
+      }, 3000);
+      return;
+    }
+    // Update
     if (state.editingId)
       dispatch({
         type: "udpate-expense",
         payload: { expense: { id: state.editingId, ...expense } },
       });
-    // create
+    // Create
     else dispatch({ type: "add-expense", payload: { expense } });
+    // Reset state
     setExpense({
       amount: 0,
       expenseName: "",
       category: "",
       date: new Date(),
     });
+    setPreviousAmount(0);
   };
 
+  // Listeners
   useEffect(() => {
     if (state.editingId) {
       const editingExpense = state.expenses.filter(
         (currentExpense) => currentExpense.id === state.editingId
       )[0];
       setExpense(editingExpense);
+      setPreviousAmount(editingExpense.amount);
     }
   }, [state.editingId]);
 
