@@ -1,4 +1,4 @@
-import { ChangeEvent, FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { categories } from "../data/categories";
 import DatePicker from "react-date-picker";
 import "react-calendar/dist/Calendar.css";
@@ -16,7 +16,7 @@ export default function ExpenseForm() {
   });
   const [error, setError] = useState("");
 
-  const { dispatch } = useBudget();
+  const { dispatch, state } = useBudget();
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement> | ChangeEvent<HTMLSelectElement>
@@ -43,7 +43,14 @@ export default function ExpenseForm() {
       }, 3000);
       return;
     }
-    dispatch({ type: "add-expense", payload: { expense } });
+    // update
+    if (state.editingId)
+      dispatch({
+        type: "udpate-expense",
+        payload: { expense: { id: state.editingId, ...expense } },
+      });
+    // create
+    else dispatch({ type: "add-expense", payload: { expense } });
     setExpense({
       amount: 0,
       expenseName: "",
@@ -51,6 +58,15 @@ export default function ExpenseForm() {
       date: new Date(),
     });
   };
+
+  useEffect(() => {
+    if (state.editingId) {
+      const editingExpense = state.expenses.filter(
+        (currentExpense) => currentExpense.id === state.editingId
+      )[0];
+      setExpense(editingExpense);
+    }
+  }, [state.editingId]);
 
   return (
     <form className="space-y-5" onSubmit={handleSubmit}>
@@ -117,7 +133,7 @@ export default function ExpenseForm() {
       </div>
       <input
         type="submit"
-        value="Registrar gasto"
+        value={state.editingId ? "Guardar cambios" : "Registrar gasto"}
         className="bg-blue-600 cursor-pointer w-full p-2 text-white uppercase font-bold rounded-lg"
       />
     </form>
