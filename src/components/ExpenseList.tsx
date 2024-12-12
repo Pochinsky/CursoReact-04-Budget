@@ -7,6 +7,12 @@ export default function ExpenseList() {
 
   const isEmpty = useMemo(() => state.expenses.length === 0, [state.expenses]);
 
+  const filteredExpenses = state.currentCategory
+    ? state.expenses.filter(
+        (expense) => expense.category === state.currentCategory
+      )
+    : state.expenses;
+
   return (
     <div className="mt-10">
       {isEmpty ? (
@@ -18,7 +24,7 @@ export default function ExpenseList() {
           <p className="text-gray-600 text-2xl font-bold my-5">
             Listado de gastos
           </p>
-          {state.expenses.map((expense) => (
+          {filteredExpenses.map((expense) => (
             <ExpenseDetails key={expense.id} expense={expense} />
           ))}
         </>
